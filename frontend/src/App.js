@@ -15,7 +15,7 @@ const App = () => {
   ];
 
   const horasExtrasFields = [
-    { name: 'codigoMarcado', label: 'Código de Marcado', required: true },
+    { name: 'codigoMarcado', label: 'Código de Marcado', required: false },
     { name: 'area', label: 'Área', required: true },
     { name: 'empleado', label: 'Empleado', required: true },
     { name: 'fecha', label: 'Fecha (día)', type: 'date', required: true },

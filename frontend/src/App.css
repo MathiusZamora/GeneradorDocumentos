@@ -55,7 +55,8 @@ h1 {
 }
 
 .form-group input {
-  width: 100%;
+  width: 90%;
+  height: 16px;
   padding: 10px;
   font-size: 1rem;
   border: 1px solid #ccc;
@@ -127,7 +128,10 @@ h1 {
 }
 
 .back-btn {
-  width: 200px;
+  display: block;
+  width: 150px;
+  height: 40px;
+  margin: 20px auto;
   padding: 12px;
   background-color: #6c757d;
   color: #fff;
