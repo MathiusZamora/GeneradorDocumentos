@@ -156,14 +156,21 @@ h1 {
 
 .item-group {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+}
+
+.item-group .form-group {
+  flex: 1;
+  min-width: 200px;
 }
 
 .item-group input {
-  flex: 1;
-  width: 80%;
+  width: 90%;
 }
 
 .add-item-btn,
@@ -188,6 +195,7 @@ h1 {
 .remove-item-btn {
   background-color: #dc3545;
   color: #fff;
+  margin-top: 20px;
 }
 
 .remove-item-btn:hover {

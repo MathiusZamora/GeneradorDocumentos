@@ -1,17 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const FormSection = ({ title, fields, allowMultipleItems = false, itemField, onSubmitSuccess }) => {
+const FormSection = ({ title, fields, allowMultipleItems = false, itemField, itemFields, onSubmitSuccess }) => {
   const navigate = useNavigate();
-  const [items, setItems] = useState(allowMultipleItems ? [{ [itemField.name]: '' }] : []);
+  const initialItem = itemFields
+    ? itemFields.reduce((acc, field) => ({ ...acc, [field.name]: '' }), {})
+    : { [itemField.name]: '' };
+  const [items, setItems] = useState(allowMultipleItems ? [initialItem] : []);
 
   const formik = useFormik({
     initialValues: {
       ...fields.reduce((acc, field) => ({ ...acc, [field.name]: '' }), {}),
-      ...(allowMultipleItems ? { [itemField.name + 's']: items } : {}),
+      ...(allowMultipleItems ? { horasExtras: items } : {}),
     },
     validationSchema: Yup.object({
       ...fields.reduce((acc, field) => ({
@@ -20,22 +23,31 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, onS
       }), {}),
       ...(allowMultipleItems
         ? {
-            [itemField.name + 's']: Yup.array().of(
-              Yup.object({
-                [itemField.name]: itemField.required
-                  ? Yup.string().required('Requerido')
-                  : Yup.string(),
-              })
-            ).min(1, 'Debe agregar al menos un elemento'),
+            horasExtras: Yup.array().of(
+              Yup.object(
+                (itemFields || [itemField]).reduce((acc, field) => ({
+                  ...acc,
+                  [field.name]: field.required
+                    ? Yup.string().required('Requerido')
+                    : Yup.string(),
+                }), {})
+              )
+            ).min(1, 'Debe agregar al menos una entrada'),
           }
         : {}),
     }),
     onSubmit: async (values) => {
       try {
         const payload = allowMultipleItems
-          ? { tipoFormulario: title, ...values, bienServicios: values.bienServicios }
+          ? {
+              tipoFormulario: title,
+              ...values,
+              ...(title === 'Solicitud de Abastecimiento Servicio/Reparación'
+                ? { bienServicios: values.horasExtras }
+                : { horasExtras: values.horasExtras }),
+            }
           : { tipoFormulario: title, ...values };
-        console.log('Payload enviado al backend:', payload); // Depuración
+        console.log('Payload enviado al backend:', payload);
         const response = await axios.post(
           'http://localhost:5000/api/generar-word',
           payload,
@@ -56,41 +68,40 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, onS
     },
   });
 
-  useEffect(() => {
-    if (title === 'Control de Horas Extras') {
-      const inicio = formik.values.inicio;
-      const finalizacion = formik.values.finalizacion;
-
-      if (inicio && finalizacion) {
-        const inicioDate = new Date(`1970-01-01T${inicio}:00`);
-        const finDate = new Date(`1970-01-01T${finalizacion}:00`);
-        const diffMs = finDate - inicioDate;
-        const diffHrs = diffMs / (1000 * 60 * 60);
-        const tiempoTotal = diffHrs >= 0 ? diffHrs.toFixed(2) : '0.00';
-        formik.setFieldValue('tiempoTotal', tiempoTotal);
-      } else {
-        formik.setFieldValue('tiempoTotal', '');
-      }
+  const calculateTiempoTotal = (inicio, finalizacion) => {
+    if (inicio && finalizacion) {
+      const inicioDate = new Date(`1970-01-01T${inicio}:00`);
+      const finDate = new Date(`1970-01-01T${finalizacion}:00`);
+      const diffMs = finDate - inicioDate;
+      const diffHrs = diffMs / (1000 * 60 * 60);
+      return diffHrs >= 0 ? diffHrs.toFixed(2) : '0.00';
     }
-  }, [formik.values.inicio, formik.values.finalizacion]);
+    return '';
+  };
 
   const handleAddItem = () => {
-    const newItems = [...items, { [itemField.name]: '' }];
+    const newItems = [...items, { ...initialItem }];
     setItems(newItems);
-    formik.setFieldValue(itemField.name + 's', newItems);
+    formik.setFieldValue('horasExtras', newItems);
   };
 
   const handleRemoveItem = (index) => {
     const newItems = items.filter((_, i) => i !== index);
     setItems(newItems);
-    formik.setFieldValue(itemField.name + 's', newItems);
+    formik.setFieldValue('horasExtras', newItems);
   };
 
-  const handleItemChange = (index, value) => {
+  const handleItemChange = (index, fieldName, value) => {
     const newItems = [...items];
-    newItems[index][itemField.name] = value;
+    newItems[index][fieldName] = value;
+
+    if (title === 'Control de Horas Extras' && (fieldName === 'inicio' || fieldName === 'finalizacion')) {
+      const { inicio, finalizacion } = newItems[index];
+      newItems[index].tiempoTotal = calculateTiempoTotal(inicio, finalizacion);
+    }
+
     setItems(newItems);
-    formik.setFieldValue(itemField.name + 's', newItems);
+    formik.setFieldValue('horasExtras', newItems);
   };
 
   return (
@@ -116,45 +127,46 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, onS
           ))}
           {allowMultipleItems && (
             <div className="items-section">
-              <h3>{itemField.label}(s)</h3>
+              <h3>{itemFields ? 'Entradas de Horas Extras' : itemField.label + '(s)'}</h3>
               {items.map((item, index) => (
                 <div key={index} className="item-group">
-                  <input
-                    type="text"
-                    value={item[itemField.name]}
-                    onChange={(e) => handleItemChange(index, e.target.value)}
-                    onBlur={() => formik.setFieldTouched(itemField.name + 's')}
-                    placeholder={itemField.label}
-                  />
+                  {(itemFields || [itemField]).map((field) => (
+                    <div key={field.name} className="form-group">
+                      <label>{field.label}</label>
+                      <input
+                        type={field.type || 'text'}
+                        value={item[field.name]}
+                        onChange={(e) => handleItemChange(index, field.name, e.target.value)}
+                        onBlur={() => formik.setFieldTouched('horasExtras')}
+                        placeholder={field.label}
+                        readOnly={field.readOnly || false}
+                      />
+                      {formik.touched.horasExtras &&
+                      formik.errors.horasExtras &&
+                      formik.errors.horasExtras[index] &&
+                      formik.errors.horasExtras[index][field.name] ? (
+                        <p className="error">{formik.errors.horasExtras[index][field.name]}</p>
+                      ) : null}
+                    </div>
+                  ))}
                   {items.length > 1 && (
                     <button
                       type="button"
                       className="remove-item-btn"
                       onClick={() => handleRemoveItem(index)}
                     >
-                      Eliminar
+                      Eliminar Entrada
                     </button>
                   )}
-                  {formik.touched[itemField.name + 's'] &&
-                  formik.errors[itemField.name + 's'] &&
-                  formik.errors[itemField.name + 's'][index] ? (
-                    <p className="error">
-                      {formik.errors[itemField.name + 's'][index][itemField.name]}
-                    </p>
-                  ) : null}
                 </div>
               ))}
-              <button
-                type="button"
-                className="add-item-btn"
-                onClick={handleAddItem}
-              >
-                Agregar {itemField.label}
+              <button type="button" className="add-item-btn" onClick={handleAddItem}>
+                Agregar Entrada
               </button>
-              {formik.touched[itemField.name + 's'] &&
-              formik.errors[itemField.name + 's'] &&
-              typeof formik.errors[itemField.name + 's'] === 'string' ? (
-                <p className="error">{formik.errors[itemField.name + 's']}</p>
+              {formik.touched.horasExtras &&
+              formik.errors.horasExtras &&
+              typeof formik.errors.horasExtras === 'string' ? (
+                <p className="error">{formik.errors.horasExtras}</p>
               ) : null}
             </div>
           )}
@@ -163,11 +175,7 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, onS
           <button type="submit" className="submit-btn">
             Generar Word
           </button>
-          <button
-            type="button"
-            className="back-btn"
-            onClick={() => navigate('/')}
-          >
+          <button type="button" className="back-btn" onClick={() => navigate('/')}>
             Volver al Menú
           </button>
         </div>

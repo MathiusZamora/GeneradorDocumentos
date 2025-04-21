@@ -11,8 +11,8 @@ app.use(express.json());
 
 app.post('/api/generar-word', (req, res) => {
   try {
-    const { tipoFormulario, bienServicios, ...datos } = req.body;
-    console.log('Datos recibidos en el backend:', { tipoFormulario, bienServicios, ...datos });
+    const { tipoFormulario, bienServicios, horasExtras, ...datos } = req.body;
+    console.log('Datos recibidos en el backend:', { tipoFormulario, bienServicios, horasExtras, ...datos });
 
     let plantillaPath;
 
@@ -35,9 +35,45 @@ app.post('/api/generar-word', (req, res) => {
 
     const data = {
       ...datos,
-      bienServiciosList: bienServicios ? bienServicios.map(item => item.bienServicio).join('\n') : '',
-      bienServicios: bienServicios || [], // Mantener para compatibilidad
+      ...(tipoFormulario === 'Solicitud de Abastecimiento Servicio/Reparación'
+        ? {
+            bienServiciosList: bienServicios ? bienServicios.map(item => item.bienServicio).join('\n') : '',
+            bienServicios: bienServicios || [],
+          }
+        : {}),
     };
+
+    if (tipoFormulario === 'Control de Horas Extras') {
+      // Mapear las entradas de horasExtras a los placeholders de la plantilla
+      const maxEntries = 5; // Limitamos a 5 entradas para evitar desbordar la plantilla
+      const horasExtrasData = {};
+      let totalHoras = 0;
+
+      (horasExtras || []).slice(0, maxEntries).forEach((entry, index) => {
+        const suffix = index === 0 ? '' : index + 1; // {fecha}, {fecha2}, {fecha3}, etc.
+        horasExtrasData[`fecha${suffix}`] = entry.fecha || '';
+        horasExtrasData[`motivo${suffix}`] = entry.motivo || '';
+        horasExtrasData[`inicio${suffix}`] = entry.inicio || '';
+        horasExtrasData[`finalizacion${suffix}`] = entry.finalizacion || '';
+        horasExtrasData[`tiempoTotal${suffix}`] = entry.tiempoTotal || '0.00';
+        totalHoras += parseFloat(entry.tiempoTotal || 0);
+      });
+
+      // Añadir campos vacíos para entradas no utilizadas
+      for (let i = (horasExtras || []).length; i < maxEntries; i++) {
+        const suffix = i === 0 ? '' : i + 1;
+        horasExtrasData[`fecha${suffix}`] = '';
+        horasExtrasData[`motivo${suffix}`] = '';
+        horasExtrasData[`inicio${suffix}`] = '';
+        horasExtrasData[`finalizacion${suffix}`] = '';
+        horasExtrasData[`tiempoTotal${suffix}`] = '';
+      }
+
+      data.horasExtras = horasExtras || [];
+      data.totalHoras = totalHoras.toFixed(2);
+      Object.assign(data, horasExtrasData);
+    }
+
     console.log('Datos enviados a Docxtemplater:', data);
     doc.setData(data);
     doc.render();

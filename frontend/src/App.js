@@ -17,6 +17,9 @@ const App = () => {
     { name: 'codigoMarcado', label: 'Código de Marcado', required: false },
     { name: 'area', label: 'Área', required: true },
     { name: 'empleado', label: 'Empleado', required: true },
+  ];
+
+  const horasExtrasItemFields = [
     { name: 'fecha', label: 'Fecha (día)', type: 'date', required: true },
     { name: 'motivo', label: 'Motivo', required: true },
     { name: 'inicio', label: 'Inicio (hora)', type: 'time', required: true },
@@ -53,6 +56,8 @@ const App = () => {
               <FormSection
                 title="Control de Horas Extras"
                 fields={horasExtrasFields}
+                allowMultipleItems={true}
+                itemFields={horasExtrasItemFields}
                 onSubmitSuccess={handleSuccess}
               />
             </div>
