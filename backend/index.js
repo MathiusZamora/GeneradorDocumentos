@@ -44,13 +44,12 @@ app.post('/api/generar-word', (req, res) => {
     };
 
     if (tipoFormulario === 'Control de Horas Extras') {
-      // Mapear las entradas de horasExtras a los placeholders de la plantilla
-      const maxEntries = 5; // Limitamos a 5 entradas para evitar desbordar la plantilla
+      const maxEntries = 5;
       const horasExtrasData = {};
       let totalHoras = 0;
 
       (horasExtras || []).slice(0, maxEntries).forEach((entry, index) => {
-        const suffix = index === 0 ? '' : index + 1; // {fecha}, {fecha2}, {fecha3}, etc.
+        const suffix = index === 0 ? '' : index + 1;
         horasExtrasData[`fecha${suffix}`] = entry.fecha || '';
         horasExtrasData[`motivo${suffix}`] = entry.motivo || '';
         horasExtrasData[`inicio${suffix}`] = entry.inicio || '';
@@ -59,7 +58,6 @@ app.post('/api/generar-word', (req, res) => {
         totalHoras += parseFloat(entry.tiempoTotal || 0);
       });
 
-      // Añadir campos vacíos para entradas no utilizadas
       for (let i = (horasExtras || []).length; i < maxEntries; i++) {
         const suffix = i === 0 ? '' : i + 1;
         horasExtrasData[`fecha${suffix}`] = '';
