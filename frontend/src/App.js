@@ -11,7 +11,6 @@ const App = () => {
     { name: 'hora', label: 'Hora', type: 'time', required: true },
     { name: 'solicitante', label: 'Solicitante', required: true },
     { name: 'area', label: 'Área', required: true },
-    { name: 'bienServicio', label: 'Bien y/o Servicio', required: true },
   ];
 
   const horasExtrasFields = [
@@ -39,6 +38,8 @@ const App = () => {
               <FormSection
                 title="Solicitud de Abastecimiento Servicio/Reparación"
                 fields={solicitudFields}
+                allowMultipleItems={true}
+                itemField={{ name: 'bienServicio', label: 'Bien y/o Servicio', required: true }}
                 onSubmitSuccess={handleSuccess}
               />
             </div>

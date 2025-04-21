@@ -11,12 +11,11 @@ app.use(express.json());
 
 app.post('/api/generar-word', (req, res) => {
   try {
-    const { tipoFormulario, ...datos } = req.body;
-    console.log('Datos recibidos en el backend:', datos); // Depuración
+    const { tipoFormulario, bienServicios, ...datos } = req.body;
+    console.log('Datos recibidos en el backend:', { tipoFormulario, bienServicios, ...datos });
 
     let plantillaPath;
 
-    // Seleccionar la plantilla según el tipo de formulario
     if (tipoFormulario === 'Solicitud de Abastecimiento Servicio/Reparación') {
       plantillaPath = 'FormatoISOAbasBienServ.docx';
     } else if (tipoFormulario === 'Control de Horas Extras') {
@@ -25,11 +24,7 @@ app.post('/api/generar-word', (req, res) => {
       throw new Error('Tipo de formulario no válido');
     }
 
-    console.log('Intentando leer la plantilla:', plantillaPath); // Depuración
     const fullPath = path.resolve(__dirname, plantillaPath);
-    console.log('Ruta completa de la plantilla:', fullPath); // Depuración
-
-    // Verificar si el archivo existe
     if (!fs.existsSync(fullPath)) {
       throw new Error(`La plantilla ${plantillaPath} no se encuentra en el directorio`);
     }
@@ -38,8 +33,13 @@ app.post('/api/generar-word', (req, res) => {
     const zip = new PizZip(contenido);
     const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
-    console.log('Datos enviados a Docxtemplater:', datos); // Depuración
-    doc.setData(datos);
+    const data = {
+      ...datos,
+      bienServiciosList: bienServicios ? bienServicios.map(item => item.bienServicio).join('\n') : '',
+      bienServicios: bienServicios || [], // Mantener para compatibilidad
+    };
+    console.log('Datos enviados a Docxtemplater:', data);
+    doc.setData(data);
     doc.render();
 
     const buffer = doc.getZip().generate({ type: 'nodebuffer' });
@@ -47,8 +47,8 @@ app.post('/api/generar-word', (req, res) => {
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.send(buffer);
   } catch (error) {
-    console.error('Error en el servidor:', error.message); // Mostrar el mensaje de error específico
-    console.error('Stack trace:', error.stack); // Mostrar la traza completa para depuración
+    console.error('Error en el servidor:', error.message);
+    console.error('Stack trace:', error.stack);
     res.status(500).send(`Error al generar el documento: ${error.message}`);
   }
 });
