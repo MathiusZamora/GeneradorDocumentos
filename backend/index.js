@@ -20,6 +20,8 @@ app.post('/api/generar-word', (req, res) => {
       plantillaPath = 'FormatoISOAbasBienServ.docx';
     } else if (tipoFormulario === 'Control de Horas Extras') {
       plantillaPath = 'ControlHorasExtras.docx';
+    } else if (tipoFormulario === 'Acta de Entrega') {
+      plantillaPath = 'ActadeEntrega.docx';
     } else {
       throw new Error('Tipo de formulario no válido');
     }
@@ -70,6 +72,32 @@ app.post('/api/generar-word', (req, res) => {
       data.horasExtras = horasExtras || [];
       data.totalHoras = totalHoras.toFixed(2);
       Object.assign(data, horasExtrasData);
+    }
+
+    if (tipoFormulario === 'Acta de Entrega') {
+      const maxEntries = 7;
+      const equiposData = {};
+
+      (horasExtras || []).slice(0, maxEntries).forEach((entry, index) => {
+        const idx = index + 1;
+        equiposData[`equipo${idx}`] = entry.equipo || '';
+        equiposData[`descripcion${idx}`] = entry.descripcion || '';
+        equiposData[`marca${idx}`] = entry.marca || '';
+        equiposData[`modelo${idx}`] = entry.modelo || '';
+        equiposData[`n_s${idx}`] = entry.n_s || '';
+      });
+
+      for (let i = (horasExtras || []).length; i < maxEntries; i++) {
+        const idx = i + 1;
+        equiposData[`equipo${idx}`] = '';
+        equiposData[`descripcion${idx}`] = '';
+        equiposData[`marca${idx}`] = '';
+        equiposData[`modelo${idx}`] = '';
+        equiposData[`n_s${idx}`] = '';
+      }
+
+      data.horasExtras = horasExtras || [];
+      Object.assign(data, equiposData);
     }
 
     console.log('Datos enviados a Docxtemplater:', data);

@@ -4,7 +4,7 @@ import * as Yup from 'yup';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const FormSection = ({ title, fields, allowMultipleItems = false, itemField, itemFields, onSubmitSuccess }) => {
+const FormSection = ({ title, fields, allowMultipleItems = false, itemField, itemFields, onSubmitSuccess, maxItems }) => {
   const navigate = useNavigate();
   const initialItem = itemFields
     ? itemFields.reduce((acc, field) => ({ ...acc, [field.name]: '' }), {})
@@ -49,15 +49,37 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, ite
     }),
     onSubmit: async (values) => {
       try {
-        const payload = allowMultipleItems
-          ? {
+        let payload;
+        if (allowMultipleItems) {
+          if (title === 'Acta de Entrega') {
+            // Mapear las entradas a la estructura esperada por la plantilla (equipo1, descripcion1, etc.)
+            const equiposData = {};
+            values.horasExtras.forEach((entrada, index) => {
+              const idx = index + 1;
+              equiposData[`equipo${idx}`] = entrada.equipo || '';
+              equiposData[`descripcion${idx}`] = entrada.descripcion || '';
+              equiposData[`marca${idx}`] = entrada.marca || '';
+              equiposData[`modelo${idx}`] = entrada.modelo || '';
+              equiposData[`n_s${idx}`] = entrada.n_s || '';
+            });
+            payload = {
+              tipoFormulario: title,
+              ...values,
+              horasExtras: values.horasExtras,
+              ...equiposData,
+            };
+          } else {
+            payload = {
               tipoFormulario: title,
               ...values,
               ...(title === 'Solicitud de Abastecimiento Servicio/Reparación'
                 ? { bienServicios: values.horasExtras }
                 : { horasExtras: values.horasExtras }),
-            }
-          : { tipoFormulario: title, ...values };
+            };
+          }
+        } else {
+          payload = { tipoFormulario: title, ...values };
+        }
         console.log('Payload enviado al backend:', payload);
         const response = await axios.post(
           'http://localhost:5000/api/generar-word',
@@ -97,7 +119,6 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, ite
     const inicioMinutes = parseTimeToMinutes(inicio);
     const finMinutes = parseTimeToMinutes(finalizacion);
 
-    // Ya no verificamos si inicioMinutes o finMinutes son 0, porque 0 es un valor válido (e.g., "12:00 AM")
     let diffMinutes = finMinutes - inicioMinutes;
     if (diffMinutes < 0) {
       diffMinutes += 24 * 60; // Sumar 24 horas en minutos si cruza el día
@@ -108,6 +129,10 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, ite
   };
 
   const handleAddItem = () => {
+    if (maxItems && items.length >= maxItems) {
+      alert(`No se pueden agregar más de ${maxItems} entradas.`);
+      return;
+    }
     const newItems = [...items, { ...initialItem }];
     setItems(newItems);
     formik.setFieldValue('horasExtras', newItems);
@@ -178,7 +203,7 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, ite
           ))}
           {allowMultipleItems && (
             <div className="items-section">
-              <h3>{itemFields ? 'Entradas de Horas Extras' : itemField.label + '(s)'}</h3>
+              <h3>{title === 'Acta de Entrega' ? 'Entradas de Equipos' : (itemFields ? 'Entradas de Horas Extras' : itemField.label + '(s)')}</h3>
               {items.map((item, index) => (
                 <div key={index} className="item-group">
                   {(itemFields || [itemField]).map((field) => (

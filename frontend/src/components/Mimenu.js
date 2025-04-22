@@ -6,7 +6,7 @@ const MainMenu = () => {
 
   return (
     <div className="container">
-      <h1>Generador de Documentos</h1>
+      <h1>Generador de Documentos RATENSA</h1>
       <div className="menu">
         <button
           className="menu-btn"
@@ -19,6 +19,12 @@ const MainMenu = () => {
           onClick={() => navigate('/control-horas-extras')}
         >
           Control de Horas Extras
+        </button>
+        <button
+          className="menu-btn"
+          onClick={() => navigate('/acta-entrega')}
+        >
+          Acta de Entrega
         </button>
       </div>
     </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainMenu from './components/Mimenu';
 import FormSection from './components/FormSection';
+import ActaEntrega from './components/ActaEntrega';
 import './App.css';
 
 const App = () => {
@@ -37,7 +38,7 @@ const App = () => {
           path="/solicitud-abastecimiento"
           element={
             <div className="container">
-              <h1>Generador de Documentos</h1>
+              <h1>Generador de Documentos RATENSA</h1>
               <FormSection
                 title="Solicitud de Abastecimiento Servicio/Reparación"
                 fields={solicitudFields}
@@ -52,7 +53,7 @@ const App = () => {
           path="/control-horas-extras"
           element={
             <div className="container">
-              <h1>Generador de Documentos</h1>
+              <h1>Generador de Documentos RATENSA</h1>
               <FormSection
                 title="Control de Horas Extras"
                 fields={horasExtrasFields}
@@ -62,6 +63,10 @@ const App = () => {
               />
             </div>
           }
+        />
+        <Route
+          path="/acta-entrega"
+          element={<ActaEntrega />}
         />
       </Routes>
     </Router>
