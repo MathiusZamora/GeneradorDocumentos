@@ -22,7 +22,7 @@ const ActaEntrega = () => {
 
   return (
     <div className="container">
-      <h1>Generador de Documentos RATENSA</h1>
+      <h1>Generador de Documentos de Técnica</h1>
       <FormSection
         title="Acta de Entrega"
         fields={fields}

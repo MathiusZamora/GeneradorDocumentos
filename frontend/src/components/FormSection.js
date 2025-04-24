@@ -19,7 +19,20 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, ite
     validationSchema: Yup.object({
       ...fields.reduce((acc, field) => ({
         ...acc,
-        [field.name]: field.required ? Yup.string().required('Requerido') : Yup.string(),
+        [field.name]:
+          field.type === 'time12h' || field.type === 'time'
+            ? field.required
+              ? Yup.string()
+                  .required('Requerido')
+                  .test('time-format', 'Formato inválido. Use e.g., 10:00 AM', (value) => {
+                    if (!value) return false;
+                    const regex = field.type === 'time12h' ? /^(1[0-2]|0?[1-9]):([0-5][0-9]) (AM|PM)$/ : /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
+                    return regex.test(value);
+                  })
+              : Yup.string()
+            : field.required
+            ? Yup.string().required('Requerido')
+            : Yup.string(),
       }), {}),
       ...(allowMultipleItems
         ? {
@@ -52,7 +65,6 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, ite
         let payload;
         if (allowMultipleItems) {
           if (title === 'Acta de Entrega') {
-            // Mapear las entradas a la estructura esperada por la plantilla (equipo1, descripcion1, etc.)
             const equiposData = {};
             values.horasExtras.forEach((entrada, index) => {
               const idx = index + 1;
@@ -121,7 +133,7 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, ite
 
     let diffMinutes = finMinutes - inicioMinutes;
     if (diffMinutes < 0) {
-      diffMinutes += 24 * 60; // Sumar 24 horas en minutos si cruza el día
+      diffMinutes += 24 * 60;
     }
 
     const diffHrs = diffMinutes / 60;
@@ -171,6 +183,11 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, ite
     formik.setFieldValue('horasExtras', newItems);
   };
 
+  const handleFieldTimeChange = (fieldName, { hours, minutes, ampm }) => {
+    const formattedTime = `${hours}:${minutes} ${ampm}`;
+    formik.setFieldValue(fieldName, formattedTime);
+  };
+
   const parseTimeForSelect = (timeStr) => {
     if (!timeStr || !/^(1[0-2]|0?[1-9]):([0-5][0-9]) (AM|PM)$/.test(timeStr)) {
       return { hours: '1', minutes: '00', ampm: 'AM' };
@@ -188,14 +205,68 @@ const FormSection = ({ title, fields, allowMultipleItems = false, itemField, ite
           {fields.map((field) => (
             <div key={field.name} className="form-group">
               <label>{field.label}</label>
-              <input
-                type={field.type || 'text'}
-                name={field.name}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                value={formik.values[field.name]}
-                readOnly={field.readOnly || false}
-              />
+              {field.type === 'time12h' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <select
+                    value={parseTimeForSelect(formik.values[field.name]).hours}
+                    onChange={(e) =>
+                      handleFieldTimeChange(field.name, {
+                        ...parseTimeForSelect(formik.values[field.name]),
+                        hours: e.target.value,
+                      })
+                    }
+                    onBlur={formik.handleBlur}
+                    name={field.name}
+                  >
+                    {[...Array(12)].map((_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {i + 1}
+                      </option>
+                    ))}
+                  </select>
+                  :
+                  <select
+                    value={parseTimeForSelect(formik.values[field.name]).minutes}
+                    onChange={(e) =>
+                      handleFieldTimeChange(field.name, {
+                        ...parseTimeForSelect(formik.values[field.name]),
+                        minutes: e.target.value,
+                      })
+                    }
+                    onBlur={formik.handleBlur}
+                    name={field.name}
+                  >
+                    {[...Array(60)].map((_, i) => (
+                      <option key={i} value={i.toString().padStart(2, '0')}>
+                        {i.toString().padStart(2, '0')}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={parseTimeForSelect(formik.values[field.name]).ampm}
+                    onChange={(e) =>
+                      handleFieldTimeChange(field.name, {
+                        ...parseTimeForSelect(formik.values[field.name]),
+                        ampm: e.target.value,
+                      })
+                    }
+                    onBlur={formik.handleBlur}
+                    name={field.name}
+                  >
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
+              ) : (
+                <input
+                  type={field.type || 'text'}
+                  name={field.name}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  value={formik.values[field.name]}
+                  readOnly={field.readOnly || false}
+                />
+              )}
               {formik.touched[field.name] && formik.errors[field.name] ? (
                 <p className="error">{formik.errors[field.name]}</p>
               ) : null}

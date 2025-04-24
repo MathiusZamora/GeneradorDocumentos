@@ -6,7 +6,7 @@ const MainMenu = () => {
 
   return (
     <div className="container">
-      <h1>Generador de Documentos RATENSA</h1>
+      <h1>Generador de Documentos de Técnica</h1>
       <div className="menu">
         <button
           className="menu-btn"

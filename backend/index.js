@@ -39,14 +39,14 @@ app.post('/api/generar-word', (req, res) => {
       ...datos,
       ...(tipoFormulario === 'Solicitud de Abastecimiento Servicio/Reparación'
         ? {
-            bienServiciosList: bienServicios ? bienServicios.map(item => item.bienServicio).join('\n') : '',
+            bienServiciosList: bienServicios ? bienServicios.map(item => item.bienServicio).join('\n\n') : '', // Cambiado a '\n\n' para dos saltos de línea
             bienServicios: bienServicios || [],
           }
         : {}),
     };
 
     if (tipoFormulario === 'Control de Horas Extras') {
-      const maxEntries = 5;
+      const maxEntries = 4;
       const horasExtrasData = {};
       let totalHoras = 0;
 

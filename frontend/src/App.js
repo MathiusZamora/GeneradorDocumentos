@@ -9,7 +9,7 @@ const App = () => {
   const solicitudFields = [
     { name: 'empresa', label: 'Empresa', required: true },
     { name: 'fecha', label: 'Fecha', type: 'date', required: true },
-    { name: 'hora', label: 'Hora', type: 'time', required: true },
+    { name: 'hora', label: 'Hora', type: 'time12h', required: true }, // Cambiado a time12h
     { name: 'solicitante', label: 'Solicitante', required: true },
     { name: 'area', label: 'Área', required: true },
   ];
@@ -38,7 +38,7 @@ const App = () => {
           path="/solicitud-abastecimiento"
           element={
             <div className="container">
-              <h1>Generador de Documentos RATENSA</h1>
+              <h1>Generador de Documentos de Técnica</h1>
               <FormSection
                 title="Solicitud de Abastecimiento Servicio/Reparación"
                 fields={solicitudFields}
@@ -53,13 +53,14 @@ const App = () => {
           path="/control-horas-extras"
           element={
             <div className="container">
-              <h1>Generador de Documentos RATENSA</h1>
+              <h1>Generador de Documentos de Técnica</h1>
               <FormSection
                 title="Control de Horas Extras"
                 fields={horasExtrasFields}
                 allowMultipleItems={true}
                 itemFields={horasExtrasItemFields}
                 onSubmitSuccess={handleSuccess}
+                maxItems={4}
               />
             </div>
           }
